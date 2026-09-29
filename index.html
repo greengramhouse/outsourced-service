@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#059669">
+<title>บันทึกการปฏิบัติงาน | โรงเรียนชุมชนวัดไทยงาม</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%23059669'/%3E%3Cpath d='M7 12l3 3 7-7' stroke='white' stroke-width='2.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = { theme: { extend: { fontFamily: { sans: ['"IBM Plex Sans Thai"', 'system-ui', 'sans-serif'] } } } };
+</script>
+<link rel="stylesheet" href="assets/css/app.css">
+</head>
+<body class="text-slate-800 antialiased">
+
+<div id="topLoader" class="hidden"></div>
+
+<!-- โหลดครั้งแรก -->
+<div id="bootLoading" class="min-h-screen grid place-items-center">
+  <div class="text-center text-slate-500">
+    <div class="spinner text-emerald-600 !w-8 !h-8 mb-3"></div>
+    <div>กำลังโหลดข้อมูล…</div>
+  </div>
+</div>
+
+<!-- เชื่อมต่อไม่ได้ -->
+<div id="bootError" class="hidden min-h-screen grid place-items-center p-4">
+  <div class="card p-6 max-w-lg w-full">
+    <div class="flex items-center gap-2 text-rose-600 font-semibold"><span data-ico="alert"></span>เชื่อมต่อฐานข้อมูลไม่ได้</div>
+    <p class="text-sm text-slate-600 mt-2" id="bootErrorText"></p>
+    <div class="lbl mt-4">สลับไปตำแหน่งอื่น</div>
+    <div class="profile-switch grid gap-1 p-1 rounded-xl bg-slate-100"></div>
+    <label class="lbl mt-4" for="bootApiUrl">URL ของ Apps Script (เว้นว่าง = ใช้โหมดทดลองในเบราว์เซอร์)</label>
+    <input id="bootApiUrl" class="inp" placeholder="https://script.google.com/macros/s/.../exec">
+    <div class="flex gap-2 justify-end mt-4">
+      <button type="button" class="btn btn-ghost" onclick="boot()"><span data-ico="refresh"></span>ลองใหม่</button>
+      <button type="button" class="btn btn-primary" onclick="bootFixUrl(this)">บันทึก URL และเชื่อมต่อ</button>
+    </div>
+  </div>
+</div>
+
+<div id="app" class="hidden">
+  <div id="modeBanner" class="hidden bg-amber-50 border-b border-amber-200 text-amber-800 text-xs sm:text-sm px-4 py-2 text-center">
+    โหมดทดลอง — ข้อมูลเก็บในเบราว์เซอร์นี้เท่านั้น <a href="#settings" class="underline font-medium">ใส่ URL ของ Apps Script</a> เพื่อบันทึกลง Google Sheet
+  </div>
+
+  <div class="lg:flex min-h-screen">
+    <!-- Sidebar (desktop) -->
+    <aside class="hidden lg:flex lg:flex-col w-64 shrink-0 bg-white border-r border-emerald-100 px-4 py-6 sticky top-0 h-screen">
+      <div class="flex items-center gap-3 px-2 mb-6">
+        <div class="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 grid place-items-center text-white shadow-sm" data-ico="book" data-ico-cls="h-5 w-5"></div>
+        <div>
+          <div class="font-semibold leading-tight">บันทึกการปฏิบัติงาน</div>
+          <div class="text-xs text-slate-500" data-bind="schoolFull"></div>
+        </div>
+      </div>
+      <div class="mb-6">
+        <div class="text-[11px] text-slate-400 mb-1 px-1">กำลังบันทึกของ</div>
+        <div class="profile-switch grid gap-1 p-1 rounded-xl bg-slate-100"></div>
+      </div>
+      <nav class="space-y-1" id="sideNav"></nav>
+      <div class="mt-auto rounded-xl bg-emerald-50 p-4 text-sm">
+        <div class="text-emerald-800 font-medium" data-bind="fullName"></div>
+        <div class="text-emerald-700/80 text-xs" data-bind="position"></div>
+      </div>
+    </aside>
+
+    <main class="flex-1 min-w-0 pb-24 lg:pb-10">
+      <!-- Topbar (mobile) -->
+      <header class="lg:hidden sticky top-0 z-20 bg-white/90 backdrop-blur border-b border-emerald-100 px-4 h-14 flex items-center gap-3">
+        <div class="h-8 w-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 grid place-items-center text-white" data-ico="book"></div>
+        <div class="font-semibold truncate hidden sm:block" id="mobileTitle">หน้าหลัก</div>
+        <div class="profile-switch ml-auto grid gap-1 p-1 rounded-xl bg-slate-100 flex-1 max-w-xs"></div>
+      </header>
+
+      <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-10 py-6">
+
+        <!-- ================= หน้าหลัก ================= -->
+        <section class="page" id="page-dashboard">
+          <div class="rounded-2xl bg-gradient-to-br from-emerald-600 via-emerald-600 to-teal-600 text-white p-6 sm:p-8 shadow-lg shadow-emerald-900/10 relative overflow-hidden">
+            <div class="absolute -right-10 -top-10 h-48 w-48 rounded-full bg-white/10"></div>
+            <div class="absolute right-16 -bottom-16 h-40 w-40 rounded-full bg-white/5"></div>
+            <div class="relative">
+              <span class="profile-pill profile-pill-hero" data-bind="profileLabel"></span>
+              <div class="text-emerald-100 text-sm mt-2" id="dashToday"></div>
+              <h1 class="text-2xl sm:text-3xl font-semibold mt-1">สวัสดี <span data-bind="firstName"></span></h1>
+              <p class="text-emerald-50/90 mt-2" id="dashTodayStatus">&nbsp;</p>
+              <div class="mt-5 flex flex-wrap gap-2">
+                <button type="button" class="btn bg-white text-emerald-700 hover:bg-emerald-50" onclick="Record.open(todayStr())"><span data-ico="plus"></span>บันทึกงานวันนี้</button>
+                <a href="#report" class="btn bg-white/15 text-white hover:bg-white/25"><span data-ico="file"></span>ออกรายงาน</a>
+              </div>
+            </div>
+          </div>
+
+          <h2 class="font-semibold text-lg mt-6">สรุปเดือนนี้ <span class="text-slate-400 font-normal text-sm" id="dashMonth"></span></h2>
+          <div class="mt-3 grid grid-cols-2 lg:grid-cols-4 gap-3" id="dashStats"></div>
+
+          <div class="mt-6 grid lg:grid-cols-5 gap-4">
+            <div class="card p-5 lg:col-span-3">
+              <div class="flex items-center justify-between mb-3">
+                <h3 class="font-semibold">บันทึกล่าสุด</h3>
+                <a href="#calendar" class="text-sm text-emerald-700 hover:underline">ดูปฏิทิน</a>
+              </div>
+              <div id="dashRecent" class="divide-y divide-slate-100"></div>
+            </div>
+            <div class="card p-5 lg:col-span-2">
+              <h3 class="font-semibold mb-3">วันทำการที่ยังไม่บันทึก <span class="text-xs font-normal text-slate-400">(เดือนนี้)</span></h3>
+              <div id="dashMissing" class="flex flex-wrap gap-2"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= บันทึกงาน ================= -->
+        <section class="page" id="page-record">
+          <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+            <div>
+              <h1 class="text-2xl font-semibold flex items-center gap-2 flex-wrap">บันทึกการทำงาน <span class="profile-pill" data-bind="profileLabel"></span></h1>
+              <p class="text-slate-500 text-sm">บันทึกวันนี้หรือย้อนหลังได้ เลือกวันที่ด้านล่าง</p>
+            </div>
+            <span id="recMode" class="hidden text-xs font-medium rounded-full px-3 py-1 bg-sky-50 text-sky-700 ring-1 ring-sky-200">มีบันทึกแล้ว — กำลังแก้ไข</span>
+          </div>
+
+          <div class="grid lg:grid-cols-3 gap-4">
+            <div class="lg:col-span-2 space-y-4 transition-opacity" id="recForm">
+              <div class="card p-5">
+                <div class="flex flex-wrap items-end gap-3">
+                  <div class="grow min-w-[11rem]">
+                    <label class="lbl" for="recDate">วันที่</label>
+                    <input type="date" id="recDate" class="inp">
+                  </div>
+                  <div class="flex gap-2">
+                    <button type="button" class="btn btn-ghost px-3" onclick="Record.changeDate(addDays(Record.date, -1))" aria-label="วันก่อนหน้า"><span data-ico="left"></span></button>
+                    <button type="button" class="btn btn-ghost" onclick="Record.changeDate(todayStr())">วันนี้</button>
+                    <button type="button" class="btn btn-ghost px-3" onclick="Record.changeDate(addDays(Record.date, 1))" aria-label="วันถัดไป"><span data-ico="right"></span></button>
+                  </div>
+                </div>
+                <div class="mt-2 text-emerald-700 font-medium" id="recDateLabel"></div>
+
+                <div class="mt-5">
+                  <span class="lbl">สถานะของวัน</span>
+                  <div class="seg grid grid-cols-2 sm:grid-cols-4 gap-1 p-1 rounded-xl bg-slate-100" id="recStatus"></div>
+                </div>
+              </div>
+
+              <div class="card p-5 hidden border-rose-200 bg-rose-50/40" id="recHolidayCard">
+                <h3 class="font-semibold text-rose-700">วันหยุด</h3>
+                <label class="lbl mt-3" for="recHolidayReason">หยุดเนื่องจาก (แสดงในแถวสีแดงของรายงาน)</label>
+                <input id="recHolidayReason" class="inp" placeholder="เช่น วันปิยมหาราช, วันหยุดชดเชย">
+                <div class="flex flex-wrap gap-2 mt-3" id="recHolidayChips"></div>
+                <p class="text-xs text-slate-500 mt-3">ถ้าเว้นว่าง รายงานจะแสดงเป็น "วันเสาร์" / "วันอาทิตย์" / "วันหยุด" ตามวันนั้น</p>
+              </div>
+
+              <div class="card p-5 transition-opacity" id="recItemsCard">
+                <div class="flex items-center justify-between mb-3">
+                  <h3 class="font-semibold">รายละเอียดงานที่ปฏิบัติ</h3>
+                  <button type="button" class="btn btn-soft py-1.5" onclick="Record.addItem()"><span data-ico="plus"></span>เพิ่มรายการ</button>
+                </div>
+                <div class="hidden sm:grid grid-cols-[1fr_5rem_6rem_2.5rem] gap-2 text-xs text-slate-500 px-1 mb-1">
+                  <div>รายละเอียดงาน</div><div class="text-center">จำนวน</div><div>หน่วย</div><div></div>
+                </div>
+                <div id="recItems" class="space-y-2"></div>
+                <p id="recEmpty" class="hidden text-sm text-slate-400 py-6 text-center">ยังไม่มีรายการ — กดงานที่ใช้บ่อย หรือ “เพิ่มรายการ”</p>
+
+                <div class="mt-5">
+                  <label class="lbl" for="recNote">หมายเหตุ (แสดงในช่องหมายเหตุของรายงาน)</label>
+                  <input id="recNote" class="inp" placeholder="เช่น ไปราชการที่ สพป.">
+                </div>
+              </div>
+
+              <div class="flex flex-wrap gap-2 justify-end">
+                <button type="button" class="btn btn-danger hidden" id="recDelete" onclick="Record.remove(this)"><span data-ico="trash"></span>ลบบันทึกวันนี้</button>
+                <button type="button" class="btn btn-primary px-6" onclick="Record.save(this)"><span data-ico="check"></span>บันทึก</button>
+              </div>
+            </div>
+
+            <div class="card p-5 h-fit lg:sticky lg:top-6">
+              <h3 class="font-semibold">งานที่ใช้บ่อย</h3>
+              <p class="text-xs text-slate-500 mb-3">กดเพื่อเพิ่มเป็นรายการ (แก้ไขรายการได้ในหน้าตั้งค่า)</p>
+              <div id="presetChips" class="flex flex-wrap gap-2"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= ปฏิทิน ================= -->
+        <section class="page" id="page-calendar">
+          <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+            <div>
+              <h1 class="text-2xl font-semibold flex items-center gap-2 flex-wrap">ปฏิทินการทำงาน <span class="profile-pill" data-bind="profileLabel"></span></h1>
+              <p class="text-slate-500 text-sm">กดที่วันเพื่อดูหรือแก้ไขรายละเอียด</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button type="button" class="btn btn-ghost px-3" onclick="Cal.shift(-1)" aria-label="เดือนก่อน"><span data-ico="left"></span></button>
+              <button type="button" class="font-semibold w-40 text-center hover:text-emerald-700" id="calTitle" onclick="Cal.thisMonth()" title="กลับไปเดือนปัจจุบัน"></button>
+              <button type="button" class="btn btn-ghost px-3" onclick="Cal.shift(1)" aria-label="เดือนถัดไป"><span data-ico="right"></span></button>
+            </div>
+          </div>
+
+          <div class="grid lg:grid-cols-3 gap-4">
+            <div class="card p-3 sm:p-4 lg:col-span-2">
+              <div class="grid grid-cols-7 text-center text-xs font-medium text-slate-500 mb-2" id="calHead"></div>
+              <div class="grid grid-cols-7 gap-1 sm:gap-1.5 transition-opacity" id="calGrid"></div>
+              <div class="flex flex-wrap gap-x-4 gap-y-1 mt-4 text-xs text-slate-600" id="calLegend"></div>
+            </div>
+            <div class="space-y-4">
+              <div class="card p-5" id="calDetail"></div>
+              <div class="card p-5">
+                <h3 class="font-semibold mb-3">สรุปเดือนนี้</h3>
+                <div id="calSummary" class="space-y-2 text-sm"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= รายงาน ================= -->
+        <section class="page" id="page-report">
+          <div class="mb-5">
+            <h1 class="text-2xl font-semibold flex items-center gap-2 flex-wrap">ออกรายงานประจำเดือน <span class="profile-pill" data-bind="profileLabel"></span></h1>
+            <p class="text-slate-500 text-sm">ใบส่งมอบงานจ้าง · ใบตรวจรับงานจ้าง · แบบรายงานผลการปฏิบัติงาน</p>
+          </div>
+          <div id="rpSetWarn" class="hidden mb-4 text-sm rounded-xl bg-amber-50 text-amber-800 px-4 py-3"></div>
+
+          <div class="grid xl:grid-cols-[22rem_1fr] gap-4">
+            <div class="space-y-4">
+              <div class="card p-5 space-y-4">
+                <h3 class="font-semibold">ช่วงเวลา</h3>
+                <div class="grid grid-cols-2 gap-3">
+                  <div><label class="lbl" for="rpMonth">เดือน</label><select id="rpMonth" class="inp"></select></div>
+                  <div><label class="lbl" for="rpYear">ปี พ.ศ.</label><select id="rpYear" class="inp"></select></div>
+                  <div><label class="lbl" for="rpFrom">ตั้งแต่วันที่</label><input type="date" id="rpFrom" class="inp"></div>
+                  <div><label class="lbl" for="rpTo">ถึงวันที่</label><input type="date" id="rpTo" class="inp"></div>
+                </div>
+                <div id="rpSummary" class="grid grid-cols-3 gap-2 text-center"></div>
+                <div id="rpWarn" class="hidden text-xs rounded-lg bg-amber-50 text-amber-800 px-3 py-2"></div>
+              </div>
+
+              <div class="card p-5 space-y-4">
+                <h3 class="font-semibold">รูปแบบเอกสาร</h3>
+                <div>
+                  <span class="lbl">ตัวเลข</span>
+                  <div class="seg grid grid-cols-2 gap-1 p-1 rounded-xl bg-slate-100" id="rpDigits">
+                    <button type="button" data-v="arabic" class="rounded-lg py-1.5 text-sm">อารบิก 123</button>
+                    <button type="button" data-v="thai" class="rounded-lg py-1.5 text-sm">เลขไทย ๑๒๓</button>
+                  </div>
+                </div>
+                <div>
+                  <span class="lbl">ส่วนที่ต้องการออก</span>
+                  <div class="space-y-1.5 text-sm">
+                    <label class="flex items-center gap-2"><input type="checkbox" class="rp-page accent-emerald-600 h-4 w-4" value="1" checked> ใบส่งมอบงานจ้าง</label>
+                    <label class="flex items-center gap-2"><input type="checkbox" class="rp-page accent-emerald-600 h-4 w-4" value="2" checked> ใบตรวจรับงานจ้าง</label>
+                    <label class="flex items-center gap-2"><input type="checkbox" class="rp-page accent-emerald-600 h-4 w-4" value="3" checked> แบบรายงานผลการปฏิบัติงาน</label>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card p-5 space-y-3">
+                <h3 class="font-semibold">กล่องรับเลขที่ (มุมขวาบน)</h3>
+                <div class="grid grid-cols-2 gap-3">
+                  <div><label class="lbl" for="rpRcvNo">รับเลขที่</label><input id="rpRcvNo" class="inp rp-in"></div>
+                  <div><label class="lbl" for="rpRcvDate">ว.ด.ป.</label><input id="rpRcvDate" class="inp rp-in"></div>
+                </div>
+                <div><label class="lbl" for="rpRcvSchool">โรงเรียน</label><input id="rpRcvSchool" class="inp rp-in"></div>
+              </div>
+
+              <div class="card p-5 space-y-3">
+                <h3 class="font-semibold">จำนวนเงิน</h3>
+                <div><label class="lbl" for="rpAmount">ขอเบิกเป็นเงิน (บาท)</label><input type="number" min="0" step="any" id="rpAmount" class="inp rp-in"></div>
+                <div class="grid grid-cols-2 gap-3">
+                  <div><label class="lbl" for="rpTax">หักภาษี ณ ที่จ่าย</label><input type="number" min="0" step="any" id="rpTax" class="inp rp-in" value="0"></div>
+                  <div><label class="lbl" for="rpNet">คงจ่ายจริง</label><input id="rpNet" class="inp bg-slate-50" readonly tabindex="-1"></div>
+                </div>
+                <div class="text-xs text-emerald-700" id="rpAmountText"></div>
+                <div><label class="lbl" for="rpRemark">หมายเหตุท้ายแบบรายงาน</label><input id="rpRemark" class="inp rp-in"></div>
+              </div>
+
+              <div class="grid grid-cols-3 gap-2 sticky bottom-20 lg:bottom-4 z-10">
+                <button type="button" class="btn btn-primary shadow-lg shadow-emerald-900/10" onclick="Report.exportAs('docx', this)"><span data-ico="file"></span>Word</button>
+                <button type="button" class="btn btn-teal shadow-lg shadow-emerald-900/10" onclick="Report.exportAs('pdf', this)"><span data-ico="download"></span>PDF</button>
+                <button type="button" class="btn btn-ghost bg-white shadow-lg shadow-emerald-900/10" onclick="Report.exportAs('pdf-open', this)"><span data-ico="eye"></span>เปิดดู</button>
+              </div>
+            </div>
+
+            <div class="card p-3 sm:p-5 bg-slate-100/60 min-w-0">
+              <div class="flex items-center justify-between mb-3 px-1">
+                <h3 class="font-semibold">ตัวอย่างเอกสาร</h3>
+                <span class="text-xs text-slate-500">A4 · ตัวอย่างอาจตัดหน้าต่างจากไฟล์จริงเล็กน้อย</span>
+              </div>
+              <div id="preview"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= ตั้งค่า ================= -->
+        <section class="page" id="page-settings">
+          <div class="mb-5">
+            <h1 class="text-2xl font-semibold flex items-center gap-2 flex-wrap">ตั้งค่า <span class="profile-pill" data-bind="profileLabel"></span></h1>
+            <p class="text-slate-500 text-sm">ข้อมูลเหล่านี้ใช้เติมลงในเอกสารอัตโนมัติ</p>
+          </div>
+          <div class="grid lg:grid-cols-2 gap-4">
+            <div class="space-y-4">
+              <div class="card p-5">
+                <h3 class="font-semibold mb-4">ข้อมูลผู้รับจ้าง</h3>
+                <div class="grid sm:grid-cols-2 gap-3" id="setPerson"></div>
+              </div>
+              <div class="card p-5">
+                <h3 class="font-semibold mb-4">ผู้ลงนามในเอกสาร</h3>
+                <div class="grid sm:grid-cols-2 gap-3" id="setSigners"></div>
+              </div>
+              <div class="flex justify-end"><button type="button" class="btn btn-primary px-6" onclick="Settings.save(this)"><span data-ico="check"></span>บันทึกการตั้งค่า</button></div>
+            </div>
+
+            <div class="space-y-4">
+              <div class="card p-5">
+                <div class="flex items-center justify-between mb-3">
+                  <h3 class="font-semibold">งานที่ใช้บ่อย</h3>
+                  <button type="button" class="btn btn-soft py-1.5" onclick="Settings.addPresetRow()"><span data-ico="plus"></span>เพิ่ม</button>
+                </div>
+                <div class="grid grid-cols-[1fr_6rem_2.5rem] gap-2 text-xs text-slate-500 px-1 mb-1"><div>ชื่องาน</div><div>หน่วย</div><div></div></div>
+                <div id="setPresets" class="space-y-2"></div>
+                <div class="flex justify-end mt-4"><button type="button" class="btn btn-primary" onclick="Settings.savePresets(this)"><span data-ico="check"></span>บันทึกงานที่ใช้บ่อย</button></div>
+              </div>
+
+              <div class="card p-5">
+                <div class="flex items-center justify-between mb-1">
+                  <h3 class="font-semibold">การเชื่อมต่อ Google Sheet</h3>
+                  <div class="text-xs" id="setMode"></div>
+                </div>
+                <p class="text-xs text-slate-500 mb-3">URL ของ Apps Script Web App สำหรับตำแหน่ง <b data-bind="profileLabel"></b> (ลงท้ายด้วย /exec) — เว้นว่างเพื่อใช้ค่าใน config.js หรือโหมดทดลอง</p>
+                <input class="inp" placeholder="https://script.google.com/macros/s/.../exec" id="setApi">
+                <div class="flex gap-2 justify-end mt-3">
+                  <button type="button" class="btn btn-ghost" onclick="Settings.testApi(this)">ทดสอบ</button>
+                  <button type="button" class="btn btn-soft" onclick="Settings.saveApi(this)">บันทึก URL</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <!-- Bottom nav (mobile) -->
+  <nav class="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-white border-t border-emerald-100 grid grid-cols-5 pb-[env(safe-area-inset-bottom)]" id="mobileNav"></nav>
+</div>
+
+<datalist id="dl-tasks"></datalist>
+<datalist id="dl-units"></datalist>
+
+<!-- Modal ยืนยัน -->
+<div id="modal" class="hidden fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm grid place-items-center p-4" onclick="if(event.target===this)closeModal(false)">
+  <div class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <h3 class="font-semibold text-lg" id="modalTitle"></h3>
+    <p class="text-slate-600 text-sm mt-2" id="modalText"></p>
+    <div class="flex justify-end gap-2 mt-6">
+      <button type="button" class="btn btn-ghost" onclick="closeModal(false)">ยกเลิก</button>
+      <button type="button" class="btn bg-rose-600 text-white hover:bg-rose-700" id="modalOk" onclick="closeModal(true)">ยืนยัน</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" role="status" aria-live="polite" class="fixed z-50 left-1/2 -translate-x-1/2 bottom-24 lg:bottom-8 bg-slate-900 text-white text-sm rounded-xl px-4 py-2.5 shadow-lg opacity-0 pointer-events-none transition-opacity max-w-[90vw] text-center"></div>
+
+<!-- ไลบรารีสร้างเอกสาร -->
+<script src="https://cdn.jsdelivr.net/npm/docx@9.5.1/dist/index.iife.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js" defer></script>
+
+<!-- แอป -->
+<script src="assets/js/config.js"></script>
+<script src="assets/js/thai.js"></script>
+<script src="assets/js/ui.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/record.js"></script>
+<script src="assets/js/calendar.js"></script>
+<script src="assets/js/settings.js"></script>
+<script src="assets/js/report-model.js"></script>
+<script src="assets/js/report.js"></script>
+<script src="assets/js/export-docx.js"></script>
+<script src="assets/js/export-pdf.js"></script>
+</body>
+</html>
