@@ -25,7 +25,7 @@ const Report = {
     } catch { /* ignore */ }
 
     ['#rpMonth', '#rpYear'].forEach(id => $(id).addEventListener('change', () => { this.setRangeFromMonth(); this.update(); }));
-    ['#rpFrom', '#rpTo'].forEach(id => $(id).addEventListener('change', () => this.update()));
+    ['#rpFrom', '#rpTo'].forEach(id => $(id).addEventListener('change', () => { this.syncMonthFromRange(); this.update(); }));
     $$('.rp-in').forEach(el => el.addEventListener('input', () => this.updateSoon()));
     $$('.rp-page').forEach(el => el.addEventListener('change', () => {
       LS.set('memo.pages', JSON.stringify($$('.rp-page:checked').map(c => c.value)));
@@ -44,6 +44,15 @@ const Report = {
     const y = +$('#rpYear').value, m = +$('#rpMonth').value;
     $('#rpFrom').value = monthStart(y, m);
     $('#rpTo').value = monthEnd(y, m);
+  },
+
+  /** แก้ช่วงวันที่เองแล้ว ให้ช่องเดือน/ปีตามเดือนของวันเริ่มต้น (ไม่แตะช่วงวันที่) */
+  syncMonthFromRange() {
+    const f = $('#rpFrom').value, t = $('#rpTo').value;
+    if (!f) return;
+    const d = parseYmd(t && t < f ? t : f);
+    $('#rpMonth').value = d.getMonth();
+    if ([...$('#rpYear').options].some(o => +o.value === d.getFullYear())) $('#rpYear').value = d.getFullYear();
   },
 
   async render() {
@@ -93,8 +102,9 @@ const Report = {
       leaveDays: days.filter(d => d.status === 'personal' || d.status === 'sick').length,
       tasks: days.reduce((n, d) => n + d.items.length, 0),
       missing: missEnd >= from ? Store.missingWeekdays(from, missEnd) : [],
-      monthName: TH_MONTHS[+$('#rpMonth').value],
-      yearBE: +$('#rpYear').value + 543,
+      // ชื่อเดือนในเอกสารยึดตามวันเริ่มต้นของช่วงที่ใช้ดึงข้อมูลจริง
+      monthName: TH_MONTHS[parseYmd(from).getMonth()],
+      yearBE: parseYmd(from).getFullYear() + 543,
       amount, tax, net: Math.round((amount - tax) * 100) / 100,
       rcv: { no: v('#rpRcvNo'), date: v('#rpRcvDate'), school: v('#rpRcvSchool') },
       remark: v('#rpRemark'),

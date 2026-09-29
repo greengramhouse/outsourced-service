@@ -129,7 +129,9 @@ function buildDocx(sections) {
     styles: {
       default: {
         document: {
-          run: { font: { ascii: FONT, hAnsi: FONT, cs: FONT, eastAsia: FONT }, size: 32, language: { value: 'en-US', eastAsia: 'en-US', bidirectional: 'th-TH' } }, // เหมือน Formdoc.docx ให้ Word ตัดคำไทยด้วยพจนานุกรม
+          // language เหมือน Formdoc.docx ให้ Word ตัดคำไทยด้วยพจนานุกรม
+          // noProof: ไม่ตรวจคำสะกด (ชื่อคน/โรงเรียน/จุดไข่ปลา/U+200B ทำให้ขึ้นเส้นหยักแดงทั้งเอกสาร)
+          run: { font: { ascii: FONT, hAnsi: FONT, cs: FONT, eastAsia: FONT }, size: 32, noProof: true, language: { value: 'en-US', eastAsia: 'en-US', bidirectional: 'th-TH' } },
           paragraph: { spacing: { before: 0, after: 0, line: 240 } },
         },
       },

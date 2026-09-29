@@ -32,6 +32,14 @@ function go(id) {
 async function route() {
   const id = (location.hash || '#dashboard').slice(1).split('?')[0];
   const page = PAGES.find(p => p.id === id) ? id : 'dashboard';
+  // ออกจากหน้าบันทึกงานขณะยังไม่ได้บันทึก: ถามก่อน ถ้ายกเลิกให้กลับไปหน้าเดิม (replaceState ไม่ทำให้เกิด hashchange ซ้ำ)
+  if (currentPage === 'record' && page !== 'record' && Record.dirty) {
+    if (!(await confirmBox('ยังไม่ได้บันทึก', 'มีการแก้ไขที่ยังไม่ได้บันทึก ต้องการออกจากหน้านี้โดยไม่บันทึกหรือไม่?', 'ออกจากหน้า'))) {
+      history.replaceState(null, '', '#record');
+      return;
+    }
+    Record.dirty = false;
+  }
   currentPage = page;
   $$('.page').forEach(s => s.classList.toggle('active', s.id === 'page-' + page));
   $$('[data-page]').forEach(b => b.classList.toggle('active', b.dataset.page === page));
@@ -79,6 +87,7 @@ async function switchProfile(id) {
   Record.dirty = false;
   // ค่าในฟอร์มรายงานเป็นของอีกคน ล้างให้เติมค่าเริ่มต้นของตำแหน่งใหม่
   ['#rpAmount', '#rpRemark', '#rpRcvNo', '#rpRcvDate'].forEach(s => $(s).value = '');
+  $('#rpTax').value = '0';
   delete $('#rpRcvSchool').dataset.touched;
   if (new URLSearchParams(location.search).has('staff')) history.replaceState(null, '', location.pathname + location.hash);
   if (!appVisible) return boot();

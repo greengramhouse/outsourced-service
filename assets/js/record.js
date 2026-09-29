@@ -136,6 +136,11 @@ const Record = {
 
 RENDER.record = () => Record.load(Record.date || todayStr());
 
+// ปิดแท็บ / รีเฟรช / ออกจากเว็บ ขณะยังไม่ได้บันทึก ให้เบราว์เซอร์ถามก่อน
+addEventListener('beforeunload', e => {
+  if (currentPage === 'record' && Record.dirty) { e.preventDefault(); e.returnValue = ''; }
+});
+
 document.addEventListener('DOMContentLoaded', () => {
   $('#recDate').addEventListener('change', e => Record.changeDate(e.target.value));
   $('#recNote').addEventListener('input', () => Record.dirty = true);
