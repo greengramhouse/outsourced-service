@@ -13,7 +13,10 @@ const PAGES = [
   { id: 'calendar', label: 'ปฏิทิน', ico: 'cal' },
   { id: 'report', label: 'รายงาน', ico: 'file' },
   { id: 'settings', label: 'ตั้งค่า', ico: 'gear' },
+  { id: 'dev', label: 'ผู้พัฒนา', ico: 'code' },
 ];
+
+RENDER.dev = async () => {};
 
 const RENDER = {}; // id -> async function ที่แต่ละไฟล์หน้าลงทะเบียนไว้
 let currentPage = null;

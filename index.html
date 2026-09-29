@@ -13,7 +13,7 @@
 <script>
   tailwind.config = { theme: { extend: { fontFamily: { sans: ['"IBM Plex Sans Thai"', 'system-ui', 'sans-serif'] } } } };
 </script>
-<link rel="stylesheet" href="assets/css/app.css">
+<link rel="stylesheet" href="assets/css/app.css?v=20260929-1">
 </head>
 <body class="text-slate-800 antialiased">
 
@@ -338,12 +338,71 @@
             </div>
           </div>
         </section>
+
+        <!-- ================= ผู้พัฒนา ================= -->
+        <section class="page" id="page-dev">
+          <div class="mb-5">
+            <h1 class="text-2xl font-semibold">ผู้พัฒนาระบบ</h1>
+            <p class="text-slate-500 text-sm">ระบบบันทึกการปฏิบัติงาน โรงเรียนชุมชนวัดไทยงาม</p>
+          </div>
+
+          <div class="card overflow-hidden max-w-3xl">
+            <div class="h-28 sm:h-32 bg-gradient-to-br from-emerald-600 via-emerald-600 to-teal-600 relative">
+              <div class="absolute -right-8 -top-10 h-40 w-40 rounded-full bg-white/10"></div>
+              <div class="absolute right-24 -bottom-12 h-28 w-28 rounded-full bg-white/5"></div>
+            </div>
+            <div class="px-5 sm:px-8 pb-6 sm:pb-8">
+              <div class="flex flex-col sm:flex-row sm:items-end gap-4 -mt-14 sm:-mt-16">
+                <img src="https://res.cloudinary.com/dqyxo3d2h/image/upload/v1785854655/copy_of_20260206_073337_1_fag4wu.jpg"
+                     alt="รูปผู้พัฒนา นายวรุณพร รัตนบุตรชัย" loading="lazy"
+                     class="h-28 w-28 sm:h-32 sm:w-32 rounded-2xl object-cover ring-4 ring-white shadow-lg bg-slate-100 relative">
+                <div class="min-w-0 sm:pb-1">
+                  <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-medium px-3 py-1 ring-1 ring-emerald-200"><span data-ico="code" data-ico-cls="h-3.5 w-3.5"></span>Full-stack Developer</span>
+                  <h2 class="text-xl sm:text-2xl font-semibold mt-2">นายวรุณพร รัตนบุตรชัย</h2>
+                  <p class="text-slate-600">เจ้าหน้าที่ธุรการ โรงเรียนชุมชนวัดไทยงาม</p>
+                </div>
+              </div>
+
+              <p class="text-slate-600 leading-relaxed mt-6">
+                ออกแบบและพัฒนาระบบนี้ด้วยตนเองทั้งหมด ตั้งแต่หน้าเว็บ ฐานข้อมูล ไปจนถึงการออกเอกสารราชการ
+                เพื่อลดงานเอกสารซ้ำซ้อนของบุคลากรในโรงเรียน ให้บันทึกงานประจำวันได้ง่ายจากมือถือหรือคอมพิวเตอร์
+                และออกเอกสารเบิกค่าจ้างได้ในไม่กี่คลิก
+              </p>
+
+              <h3 class="font-semibold mt-6 mb-3">ความสามารถด้านการเขียนโปรแกรม</h3>
+              <div class="grid sm:grid-cols-2 gap-3">
+                <div class="rounded-xl border border-slate-200 p-4">
+                  <div class="flex items-center gap-2 font-medium text-emerald-700"><span data-ico="layout" data-ico-cls="h-5 w-5"></span>Frontend</div>
+                  <p class="text-sm text-slate-600 mt-1.5">สร้างเว็บแอปด้วย HTML, JavaScript และ Tailwind CSS รองรับทั้งมือถือและคอมพิวเตอร์ (Responsive Design)</p>
+                </div>
+                <div class="rounded-xl border border-slate-200 p-4">
+                  <div class="flex items-center gap-2 font-medium text-emerald-700"><span data-ico="server" data-ico-cls="h-5 w-5"></span>Backend / API</div>
+                  <p class="text-sm text-slate-600 mt-1.5">เขียน API ด้วย Google Apps Script รับ-ส่งข้อมูลแบบ JSON พร้อมระบบ cache และ lock กันข้อมูลชนกัน</p>
+                </div>
+                <div class="rounded-xl border border-slate-200 p-4">
+                  <div class="flex items-center gap-2 font-medium text-emerald-700"><span data-ico="db" data-ico-cls="h-5 w-5"></span>ฐานข้อมูล</div>
+                  <p class="text-sm text-slate-600 mt-1.5">ออกแบบโครงสร้างข้อมูลบน Google Sheets แยกข้อมูลตามตำแหน่ง และเก็บข้อมูลในเบราว์เซอร์ให้เปิดใช้งานได้เร็ว</p>
+                </div>
+                <div class="rounded-xl border border-slate-200 p-4">
+                  <div class="flex items-center gap-2 font-medium text-emerald-700"><span data-ico="file" data-ico-cls="h-5 w-5"></span>ระบบออกเอกสาร</div>
+                  <p class="text-sm text-slate-600 mt-1.5">สร้างไฟล์ Word และ PDF ตามแบบฟอร์มราชการ รองรับฟอนต์ TH Sarabun เลขไทย และการตัดคำภาษาไทย</p>
+                </div>
+              </div>
+
+              <div class="flex flex-wrap gap-2 mt-5">
+                <span class="dev-chip">HTML</span><span class="dev-chip">JavaScript</span><span class="dev-chip">Tailwind CSS</span>
+                <span class="dev-chip">Google Apps Script</span><span class="dev-chip">Google Sheets</span><span class="dev-chip">REST API</span>
+                <span class="dev-chip">docx.js</span><span class="dev-chip">pdfmake</span><span class="dev-chip">Git / GitHub Pages</span>
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
     </main>
   </div>
 
   <!-- Bottom nav (mobile) -->
-  <nav class="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-white border-t border-emerald-100 grid grid-cols-5 pb-[env(safe-area-inset-bottom)]" id="mobileNav"></nav>
+  <nav class="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-white border-t border-emerald-100 grid grid-cols-6 pb-[env(safe-area-inset-bottom)]" id="mobileNav"></nav>
 </div>
 
 <datalist id="dl-tasks"></datalist>
@@ -367,18 +426,18 @@
 <script src="https://cdn.jsdelivr.net/npm/docx@9.5.1/dist/index.iife.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js" defer></script>
 
-<!-- แอป -->
-<script src="assets/js/config.js"></script>
-<script src="assets/js/thai.js"></script>
-<script src="assets/js/ui.js"></script>
-<script src="assets/js/api.js"></script>
-<script src="assets/js/app.js"></script>
-<script src="assets/js/record.js"></script>
-<script src="assets/js/calendar.js"></script>
-<script src="assets/js/settings.js"></script>
-<script src="assets/js/report-model.js"></script>
-<script src="assets/js/report.js"></script>
-<script src="assets/js/export-docx.js"></script>
-<script src="assets/js/export-pdf.js"></script>
+<!-- แอป — ?v= คือเลขเวอร์ชัน เปลี่ยนทุกครั้งที่ deploy (ทั้งไฟล์ css และ js) ให้เบราว์เซอร์โหลดไฟล์ใหม่ทันที -->
+<script src="assets/js/config.js?v=20260929-1"></script>
+<script src="assets/js/thai.js?v=20260929-1"></script>
+<script src="assets/js/ui.js?v=20260929-1"></script>
+<script src="assets/js/api.js?v=20260929-1"></script>
+<script src="assets/js/app.js?v=20260929-1"></script>
+<script src="assets/js/record.js?v=20260929-1"></script>
+<script src="assets/js/calendar.js?v=20260929-1"></script>
+<script src="assets/js/settings.js?v=20260929-1"></script>
+<script src="assets/js/report-model.js?v=20260929-1"></script>
+<script src="assets/js/report.js?v=20260929-1"></script>
+<script src="assets/js/export-docx.js?v=20260929-1"></script>
+<script src="assets/js/export-pdf.js?v=20260929-1"></script>
 </body>
 </html>
