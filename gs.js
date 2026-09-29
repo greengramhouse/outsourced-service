@@ -111,6 +111,7 @@ function setup() {
   const blank = ss.getSheetByName('Sheet1') || ss.getSheetByName('ชีต1');
   if (blank && ss.getSheets().length > 1 && blank.getLastRow() === 0) ss.deleteSheet(blank);
 
+  bumpCache_();
   Logger.log('setup เสร็จแล้ว');
 }
 
@@ -140,6 +141,7 @@ function setupJanitor() {
   if (!presets.length || presets[0].task === DEFAULT_PRESETS[0][0]) {
     savePresets_(JANITOR_PRESETS.map(function (r) { return { task: r[0], unit: r[1] }; }));
   }
+  bumpCache_();
   Logger.log('setupJanitor เสร็จแล้ว');
 }
 
@@ -168,6 +170,7 @@ function setupNanny() {
   if (!presets.length || presets[0].task === DEFAULT_PRESETS[0][0]) {
     savePresets_(NANNY_PRESETS.map(function (r) { return { task: r[0], unit: r[1] }; }));
   }
+  bumpCache_();
   Logger.log('setupNanny เสร็จแล้ว');
 }
 
@@ -194,8 +197,11 @@ function handle_(action, p) {
   try {
     switch (action) {
       case 'ping':         return json_({ ok: true, time: new Date().toISOString() });
-      case 'init':         return json_({ ok: true, settings: getSettings_(), presets: getPresets_() });
-      case 'getRange':     return json_({ ok: true, days: getRange_(p.from, p.to) });
+      case 'init':         return json_(cached_('init', function () { return { ok: true, settings: getSettings_(), presets: getPresets_() }; }));
+      case 'getRange':
+        assertDate_(p.from);
+        assertDate_(p.to);
+        return json_(cached_('range:' + p.from + ':' + p.to, function () { return { ok: true, days: getRange_(p.from, p.to) }; }));
       case 'getDay':       return json_({ ok: true, day: getRange_(p.date, p.date)[0] || null });
       case 'saveDay':      return withLock_(function () { return json_({ ok: true, day: saveDay_(p) }); });
       case 'deleteDay':    return withLock_(function () { deleteDay_(p.date); return json_({ ok: true }); });
@@ -386,8 +392,58 @@ function withLock_(fn) {
   try {
     return fn();
   } finally {
+    bumpCache_(); // ทุกการบันทึก/ลบ ทำให้ cache เดิมใช้ไม่ได้ทันที (สำเร็จหรือไม่ก็ล้าง เพื่อความปลอดภัย)
     lock.releaseLock();
   }
+}
+
+/* ------------------------------------------------------------------ */
+/* Cache: เก็บผลอ่าน Sheet ไว้ใน CacheService ให้ init/getRange ตอบเร็วขึ้น */
+/* ------------------------------------------------------------------ */
+// key ทุกตัวขึ้นต้นด้วย "รุ่น" (gen) เมื่อข้อมูลเปลี่ยนแค่เปลี่ยนรุ่น cache เก่าทั้งหมดจะไม่ถูกใช้อีก
+// ถ้า gen หายไปเอง (Google ลบ cache) ก็แค่สร้างรุ่นใหม่ = อ่านจาก Sheet ใหม่ ไม่มีทางได้ข้อมูลผิด
+
+const CACHE_TTL = 3600;     // ผลอ่านเก็บไว้ไม่เกิน 1 ชั่วโมง
+const CACHE_GEN_TTL = 21600; // สูงสุดที่ CacheService อนุญาต (6 ชั่วโมง)
+
+function cacheGen_() {
+  const c = CacheService.getScriptCache();
+  let gen = c.get('gen');
+  if (!gen) {
+    gen = String(Date.now());
+    c.put('gen', gen, CACHE_GEN_TTL);
+  }
+  return gen;
+}
+
+function bumpCache_() {
+  CacheService.getScriptCache().put('gen', Date.now() + '-' + Math.random().toString(36).slice(2, 8), CACHE_GEN_TTL);
+}
+
+/** คืนค่าจาก cache ถ้ามี ไม่มีก็เรียก fn แล้วเก็บผลไว้ (ถ้าใหญ่เกิน 100KB จะไม่เก็บ แต่ยังตอบได้ปกติ) */
+function cached_(key, fn) {
+  const c = CacheService.getScriptCache();
+  const k = cacheGen_() + ':' + key;
+  const hit = c.get(k);
+  if (hit) return JSON.parse(hit);
+  const val = fn();
+  try {
+    c.put(k, JSON.stringify(val), CACHE_TTL);
+  } catch (err) {
+    // ข้อมูลใหญ่เกินที่ CacheService รับได้ — ข้าม cache
+  }
+  return val;
+}
+
+/** แก้ไข Sheet ด้วยมือ (พิมพ์ในช่อง) → ล้าง cache อัตโนมัติ */
+function onEdit() {
+  bumpCache_();
+}
+
+/** ถ้าลบ/แทรกแถวใน Sheet ด้วยมือ (onEdit ไม่ทำงานกรณีนี้) ให้เลือกฟังก์ชันนี้แล้วกด "เรียกใช้" */
+function clearCache() {
+  bumpCache_();
+  Logger.log('ล้าง cache แล้ว');
 }
 
 function json_(obj) {
