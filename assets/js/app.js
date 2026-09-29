@@ -83,7 +83,6 @@ async function switchProfile(id) {
   if (appVisible && currentPage === 'record' && Record.dirty &&
       !(await confirmBox('ยังไม่ได้บันทึก', 'มีการแก้ไขที่ยังไม่ได้บันทึก ต้องการสลับตำแหน่งโดยไม่บันทึกหรือไม่?', 'สลับ'))) return;
   Profile.set(id);
-  Store.reset();
   Record.dirty = false;
   // ค่าในฟอร์มรายงานเป็นของอีกคน ล้างให้เติมค่าเริ่มต้นของตำแหน่งใหม่
   ['#rpAmount', '#rpRemark', '#rpRcvNo', '#rpRcvDate'].forEach(s => $(s).value = '');
@@ -92,9 +91,11 @@ async function switchProfile(id) {
   if (new URLSearchParams(location.search).has('staff')) history.replaceState(null, '', location.pathname + location.hash);
   if (!appVisible) return boot();
   renderProfileSwitch();
-  $('#app').classList.add('opacity-60', 'pointer-events-none');
+  // ถ้าเคยโหลด (หรือโหลดล่วงหน้าไว้) แล้ว ขึ้นได้ทันที ไม่ต้องหรี่หน้าจอ
+  const cached = Store.isReady(id);
+  if (!cached) $('#app').classList.add('opacity-60', 'pointer-events-none');
   try {
-    await Store.init();
+    await Store.warm(id); // ตั้งค่า + ข้อมูลเดือนนี้ โหลดพร้อมกันในรอบเดียว
     bindCommon();
     await route();
     toast('กำลังบันทึกของ: ' + Profile.get().label);
@@ -162,6 +163,18 @@ RENDER.dashboard = async function () {
     : '<p class="text-sm text-emerald-700">บันทึกครบทุกวันทำการแล้ว</p>';
 };
 
+/* ข้อมูลใหม่จาก Sheet มาถึงหลังแสดงข้อมูลจาก cache ไปแล้ว: วาดใหม่เฉพาะหน้าที่ไม่มีช่องให้กรอก
+   (หน้าบันทึก/รายงาน/ตั้งค่าไม่วาดทับ เพื่อไม่ให้สิ่งที่กำลังพิมพ์หาย) */
+let refreshTimer = null;
+Store.onChange = () => {
+  clearTimeout(refreshTimer);
+  refreshTimer = setTimeout(() => {
+    if ($('#app').classList.contains('hidden')) return;
+    bindCommon();
+    if (currentPage === 'dashboard' || currentPage === 'calendar') RENDER[currentPage]().catch(console.error);
+  }, 100);
+};
+
 /* ---------------- เริ่มระบบ ---------------- */
 async function boot() {
   if (!Profile.currentId) Profile.init();
@@ -172,6 +185,7 @@ async function boot() {
   $('#bootError').classList.add('hidden');
   $('#bootLoading').classList.remove('hidden');
   try {
+    const month = Store.warm().catch(() => {}); // เริ่มโหลดข้อมูลเดือนนี้คู่กับตั้งค่า (หน้าต่าง ๆ จะรอ Promise เดิม ไม่ยิงซ้ำ)
     await Store.init();
     $('#bootLoading').classList.add('hidden');
     $('#app').classList.remove('hidden');
@@ -179,6 +193,7 @@ async function boot() {
     if (!window.__routeBound) { window.addEventListener('hashchange', route); window.__routeBound = true; }
     if (!Store.settings.fullName && !location.hash) location.hash = 'settings';
     route();
+    month.then(() => Store.prefetchOthers());
   } catch (err) {
     console.error(err);
     showBootError(err);

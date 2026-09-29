@@ -43,10 +43,13 @@ body { font-family: 'IBM Plex Sans Thai', system-ui, sans-serif; background: #f3
 .paper .rcv { margin-left: auto; border: 1px solid #000; padding: 1px 5px; }
 #preview { overflow: hidden; }
 
-/* ---------- สลับตำแหน่ง (ธุรการ = เขียว, นักการภารโรง = ส้ม) ---------- */
+/* ---------- สลับตำแหน่ง (ธุรการ = เขียว, นักการภารโรง = ส้ม, พี่เลี้ยงเด็กพิการ = ชมพู) ---------- */
 .profile-switch button.active { background: #fff; color: #065f46; box-shadow: 0 1px 3px rgba(0,0,0,.1); }
 [data-profile="janitor"] .profile-switch button.active { color: #b45309; }
 .profile-pill { display: inline-flex; align-items: center; border-radius: 999px; padding: .1rem .7rem; font-size: .75rem; font-weight: 600; background: #d1fae5; color: #065f46; }
 [data-profile="janitor"] .profile-pill { background: #fef3c7; color: #92400e; }
 .profile-pill-hero { background: rgba(255,255,255,.2) !important; color: #fff !important; }
 [data-profile="janitor"] .profile-pill-hero { background: #f59e0b !important; }
+[data-profile="nanny"] .profile-switch button.active { color: #be185d; }
+[data-profile="nanny"] .profile-pill { background: #fce7f3; color: #9d174d; }
+[data-profile="nanny"] .profile-pill-hero { background: #ec4899 !important; }
