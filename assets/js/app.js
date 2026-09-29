@@ -16,9 +16,8 @@ const PAGES = [
   { id: 'dev', label: 'ผู้พัฒนา', ico: 'code' },
 ];
 
-RENDER.dev = async () => {};
-
 const RENDER = {}; // id -> async function ที่แต่ละไฟล์หน้าลงทะเบียนไว้
+RENDER.dev = async () => {}; // หน้าผู้พัฒนาเป็น HTML คงที่ ไม่ต้องโหลดข้อมูล
 let currentPage = null;
 
 function buildNav() {
