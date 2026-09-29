@@ -10,12 +10,12 @@ window.APP_CONFIG = {
     },
     {
       id: 'janitor',
-      label: 'นักการภารโรง',
+      label: 'นักการ',
       API_URL: 'https://script.google.com/macros/s/AKfycbwvUVHwPv3kvdO4xxBKqjBwhQ47Cy09GLCiF4nv6J-ZOxhKrITK2ydmyakpJKoPEJL7Sg/exec', // ใส่ URL ของ Apps Script ตัวที่ 2 (Sheet ของนักการภารโรง)
     },
     {
       id: 'nanny',
-      label: 'เลี้ยงเด็กพิการ',
+      label: 'พี่เลี้ยง',
       API_URL: 'https://script.google.com/macros/s/AKfycbxHZzmLQuZn8ZyEOBqOdOIdslIcfdnesmqRo-4WWDcodGG8vijflQOK2mCebc8DkRDW8Q/exec', // ใส่ URL ของ Apps Script ตัวที่ 3 (Sheet ของพี่เลี้ยงเด็กพิการ) ห้ามใช้ URL ซ้ำกับตำแหน่งอื่น
     },
   ],
