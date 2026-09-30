@@ -78,7 +78,7 @@ const Report = {
     this.timer = setTimeout(() => this.update(), 250);
   },
 
-  /** รวบรวมข้อมูลทั้งหมดที่เอกสารต้องใช้ (preview / Word / PDF ใช้ object เดียวกัน) */
+  /** รวบรวมข้อมูลทั้งหมดที่เอกสารต้องใช้ (preview / Word ใช้ object เดียวกัน) */
   async data() {
     const v = id => $(id).value.trim();
     let from = v('#rpFrom'), to = v('#rpTo');
@@ -144,9 +144,8 @@ const Report = {
           !(await confirmBox('ไม่มีบันทึกในช่วงนี้', 'ตารางแบบรายงานจะว่างเปล่า ต้องการส่งออกต่อหรือไม่?', 'ส่งออก'))) return;
       const sections = buildDocModel(D);
       const name = reportFileName(D);
-      if (type === 'docx') await exportDocx(sections, name);
-      else await exportPdf(sections, name, type === 'pdf-open');
-      toast(type === 'pdf-open' ? 'เปิด PDF ในแท็บใหม่แล้ว' : 'ดาวน์โหลดแล้ว');
+      await exportDocx(sections, name);
+      toast('ดาวน์โหลดแล้ว');
     });
   },
 };
@@ -156,9 +155,9 @@ function renderPreviewHTML(sections) {
   const run = r => {
     if (typeof r === 'string') return esc(r);
     if (r.b) return `<b>${esc(r.text)}</b>`;
-    return `<span class="f" style="min-width:${r.w}em">${r.fill ? esc(r.fill) : '&nbsp;'}</span>`;
+    return `<span class="f" style="min-width:${r.w}em;padding-left:${0.35 + (r.lead || 0)}em;padding-right:${0.35 + (r.tail || 0)}em">${r.fill ? esc(r.fill) : '&nbsp;'}</span>`;
   };
-  // justify ในเบราว์เซอร์ขยายเฉพาะช่องว่าง ทำให้ภาษาไทยห่างผิดธรรมชาติ จึงแสดงชิดซ้ายเหมือน PDF
+  // justify ในเบราว์เซอร์ขยายเฉพาะช่องว่าง ทำให้ภาษาไทยห่างผิดธรรมชาติ จึงแสดงชิดซ้าย
   const para = b => `<p style="text-align:${b.align === 'justify' ? 'left' : b.align};margin:${b.before}pt 0 ${b.after}pt ${b.ml}pt;text-indent:${b.fi}pt;font-size:${b.size}pt;font-weight:${b.bold ? 700 : 400}">${b.runs.length ? b.runs.map(run).join('') : '&nbsp;'}</p>`;
   const block = b => {
     switch (b.t) {

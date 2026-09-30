@@ -1,4 +1,4 @@
-// โมเดลเอกสารกลาง: สร้างครั้งเดียว แล้ว preview / Word / PDF นำไปแสดงผลเหมือนกัน
+// โมเดลเอกสารกลาง: สร้างครั้งเดียว แล้ว preview / Word นำไปแสดงผลเหมือนกัน
 //
 // Section = { blocks: Block[] }                       (1 section = เริ่มหน้าใหม่)
 // Block   = { t:'p', runs, align, ml, fi, size, bold, before, after }   หน่วย pt
@@ -23,7 +23,8 @@ const HOLIDAY_SHADE = { color: '#DC2626', opacity: 0.2, blended: 'F8D4D4' };
 function buildDocModel(D) {
   const s = D.settings;
   const T = x => D.thaiDigits ? toThaiDigits(x ?? '') : String(x ?? '');
-  const F = (val, w = 6) => ({ fill: T(val), w });
+  // F(ค่า, ความกว้าง, เส้นประเพิ่มด้านหลัง, เส้นประเพิ่มด้านหน้า) หน่วย em
+  const F = (val, w = 6, tail = 0, lead = 0) => ({ fill: T(val), w, tail, lead });
   const P = (runs, o = {}) => ({ t: 'p', runs: [].concat(runs), align: 'left', ml: 0, fi: 0, size: 16, bold: false, before: 0, after: 0, ...o });
   const BL = (size = 16) => P([], { size });
   const J = (runs, o = {}) => P(runs, { align: 'justify', fi: 72, ...o });
@@ -46,11 +47,11 @@ function buildDocModel(D) {
       P(['เขียนที่โรงเรียน', F(school, 8)], { ml: 252 }),
       BL(),
       P(['วันที่ ', F('', 12)], { ml: 180, after: 12 }),
-      P(['เรื่อง   ส่งมอบงานจ้างเหมาบริการ ตำแหน่ง', F(pos, 8)], { before: 12 }),
-      P(['เรียน   ผู้อำนวยการโรงเรียน', F(school, 8)], { before: 6 }),
+      P(['เรื่อง   ส่งมอบงานจ้างเหมาบริการ ตำแหน่ง', F(pos, 2, 3, 1)], { before: 12 }),
+      P(['เรียน   ผู้อำนวยการโรงเรียน', F(school, 6)], { before: 6 }),
       P('สิ่งที่ส่งมาด้วย  สำเนาบัญชีลงเวลาการปฏิบัติงานของเจ้าหน้าที่จ้างเหมาบริการจำนวน ' + T(1) + ' ฉบับ', { before: 6, after: 6 }),
       J(['ตามที่ข้าพเจ้า ', F(name, 10), ' รับจ้างปฏิบัติงานตำแหน่ง ', F(pos, 7), ' ให้กับโรงเรียน', F(school, 7),
-        ' โดยได้รับค่าจ้างเหมาบริการ เดือนละ', F(money(s.wage), 5), 'บาท (', F(bahtText(s.wage), 8), ') นั้น'], { after: 6 }),
+        ' โดยได้รับค่าจ้างเหมาบริการ เดือนละ', F(money(s.wage), 4), 'บาท (', F(bahtText(s.wage), 6), ') นั้น'], { after: 6 }),
       J(['ข้าพเจ้าขอส่งมอบงานที่ได้รับมอบหมาย สำหรับเดือน', F(D.monthName, 5), 'พ.ศ. ', F(D.yearBE, 3.5),
         'ตามแบบรายงานผลการปฏิบัติงานของเจ้าหน้าที่จ้างเหมาบริการ (ที่ส่งมาด้วย) และขอเบิกเงินค่าจ้างเหมาบริการ เป็นเงิน',
         F(amt, 5), 'บาท (', F(amtText, 8), ')'], { after: 6 }),
@@ -155,15 +156,18 @@ function buildDocModel(D) {
 }
 
 /**
- * จุดไข่ปลาสำหรับช่องว่าง และช่องว่างรอบค่าเพื่อให้เส้นใต้ยาวใกล้เคียง preview (ใช้ใน Word/PDF)
+ * จุดไข่ปลาสำหรับช่องว่าง และช่องว่างรอบค่าเพื่อให้เส้นใต้ยาวใกล้เคียง preview (ใช้ใน Word)
  * ใช้ช่องว่างปกติ (ไม่ใช่ non-breaking) เพื่อให้ตัดบรรทัดได้ ไม่เช่นนั้น Word จะกระจายตัวอักษรห่าง
  */
 function fillText(run) {
-  const w = run.w || 6;
-  if (!run.fill) return { blank: true, text: '.'.repeat(Math.round(w * 4)), pad: '', value: '' };
+  const w = run.w ?? 6, lead = run.lead || 0, tail = run.tail || 0;
+  if (!run.fill) return { blank: true, text: '.'.repeat(Math.round((w + lead + tail) * 4)), pre: '', post: '', value: '' };
   const est = [...run.fill].filter(c => !/[ัิ-ฺ็-๎]/.test(c)).length * 0.45; // ไม่นับสระบน/ล่าง/วรรณยุกต์
   const pad = ' '.repeat(Math.max(1, Math.round((w - est) / 0.25 / 2)));
-  return { blank: false, text: pad + run.fill + pad, pad, value: run.fill };
+  const pre = pad + ' '.repeat(Math.round(lead / 0.25));
+  // ปิดท้ายด้วย non-breaking space: Word ไม่ขีดเส้นใต้ช่องว่างท้ายย่อหน้า ช่องว่างหลังค่าจึงต้องไม่ใช่ตัวสุดท้าย
+  const post = pad.slice(1) + ' '.repeat(Math.round(tail / 0.25)) + ' ';
+  return { blank: false, text: pre + run.fill + post, pre, post, value: run.fill };
 }
 
 /** ชื่อไฟล์ เช่น รายงาน-ตุลาคม2569-นางสาวสมใจ_ใจดี */

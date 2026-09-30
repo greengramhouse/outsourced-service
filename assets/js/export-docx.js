@@ -18,7 +18,7 @@ function buildDocx(sections) {
     if (r.b) return new TextRun({ ...base, text: thaiBreak(r.text), bold: true });
     const f = fillText(r);
     if (f.blank) return new TextRun({ ...base, text: f.text });
-    return new TextRun({ ...base, text: f.pad + thaiBreak(f.value) + f.pad, underline: { type: UnderlineType.DOTTED } });
+    return new TextRun({ ...base, text: f.pre + thaiBreak(f.value) + f.post, underline: { type: UnderlineType.DOTTED } });
   });
 
   const para = b => new Paragraph({

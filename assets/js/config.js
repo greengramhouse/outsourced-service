@@ -20,15 +20,6 @@ window.APP_CONFIG = {
     },
   ],
 
-  // ฟอนต์สำหรับ PDF (pdfmake โหลดจาก URL) — เก็บไฟล์ไว้ใน fonts/ ของ repo เอง
-  // (https://guykorat.github.io/font/... ตอบ 404 แล้ว จึงไม่ใช้)
-  PDF_FONTS: {
-    THSarabunNew: {
-      normal: new URL('fonts/THSarabunNew.ttf', document.baseURI).href,
-      bold: new URL('fonts/THSarabunNew-Bold.ttf', document.baseURI).href,
-    },
-  },
-
   // ฟอนต์ที่ไฟล์ Word อ้างถึง (ต้องติดตั้งในเครื่องที่เปิดไฟล์)
   DOCX_FONT: 'TH SarabunPSK',
 };
