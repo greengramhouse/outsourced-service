@@ -256,24 +256,67 @@ function saveDay_(p) {
   const note = String(p.note || '').trim();
   const now = Utilities.formatDate(new Date(), TZ, "yyyy-MM-dd'T'HH:mm:ss");
 
+  // อ่านทั้งหมดก่อนแล้วค่อยเขียน — อ่านหลังเขียนจะบังคับให้ Sheets flush ทุกครั้ง ซึ่งช้า
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const daySh = sheet_(SHEET.DAYS, ss);
+  const itSh = sheet_(SHEET.ITEMS, ss);
+  const dayLast = daySh.getLastRow();
+  const rowIdx = findRowIndex_(daySh, p.date, dayLast);
+  const itLast = itSh.getLastRow();
+  const oldRows = matchingRows_(itSh, p.date, itLast);
+
   // Days: upsert
-  const daySh = sheet_(SHEET.DAYS);
-  const rowIdx = findRowIndex_(daySh, p.date);
-  const rowVals = [[p.date, status, note, now]];
-  if (rowIdx > 0) {
-    daySh.getRange(rowIdx, 1, 1, 4).setValues(rowVals);
-  } else {
-    daySh.getRange(daySh.getLastRow() + 1, 1, 1, 4).setValues(rowVals);
-  }
+  daySh.getRange(rowIdx > 0 ? rowIdx : dayLast + 1, 1, 1, 4).setValues([[p.date, status, note, now]]);
 
-  // Items: ลบของเดิมของวันนั้นแล้วเขียนใหม่
-  deleteItemsOf_(p.date);
-  if (items.length) {
-    const itSh = sheet_(SHEET.ITEMS);
-    itSh.getRange(itSh.getLastRow() + 1, 1, items.length, 5).setValues(items);
-  }
+  // Items: เขียนทับแถวเดิมของวันนั้น ส่วนที่เกินต่อท้าย ส่วนที่เหลือค่อยลบ (ลบแถวช้ากว่าเขียนทับมาก)
+  writeItems_(itSh, oldRows, items, itLast);
 
-  return getRange_(p.date, p.date)[0];
+  // ไม่ต้องอ่านชีตทั้งสองซ้ำ — สร้างผลลัพธ์จากข้อมูลที่เพิ่งเขียน (รูปแบบเดียวกับ getRange_)
+  return {
+    date: p.date, status: status, note: note, updatedAt: now,
+    items: items.map(function (r) { return { task: r[2], qty: r[3], unit: r[4] }; }),
+  };
+}
+
+/** แถว (1-based) ใน Items ที่คอลัมน์ A ตรงกับวันที่ เรียงจากบนลงล่าง */
+function matchingRows_(sh, date, last) {
+  if (last < 2) return [];
+  const col = sh.getRange(2, 1, last - 1, 1).getValues();
+  const rows = [];
+  for (let i = 0; i < col.length; i++) {
+    if (toDateStr_(col[i][0]) === date) rows.push(i + 2);
+  }
+  return rows;
+}
+
+/** จัดแถวที่เรียงกันเป็นก้อนต่อเนื่อง [[startRow, count], ...] เพื่อลดจำนวนครั้งที่เรียก Sheets */
+function toRuns_(rows) {
+  const runs = [];
+  rows.forEach(function (row) {
+    const lastRun = runs[runs.length - 1];
+    if (lastRun && lastRun[0] + lastRun[1] === row) lastRun[1]++;
+    else runs.push([row, 1]);
+  });
+  return runs;
+}
+
+/**
+ * แทนที่รายการงานของวันหนึ่ง: oldRows = แถวเดิมของวันนั้น, items = ข้อมูลใหม่, last = getLastRow() ก่อนเขียน
+ * ส่วนใหญ่จำนวนรายการเท่าเดิมหรือใกล้เคียง จึงเป็นแค่ setValues 1 ครั้ง ไม่ต้องลบ/แทรกแถว
+ */
+function writeItems_(sh, oldRows, items, last) {
+  const reuse = oldRows.slice(0, items.length);
+  let k = 0;
+  toRuns_(reuse).forEach(function (run) {
+    sh.getRange(run[0], 1, run[1], 5).setValues(items.slice(k, k + run[1]));
+    k += run[1];
+  });
+  if (k < items.length) {
+    sh.getRange(last + 1, 1, items.length - k, 5).setValues(items.slice(k));
+  }
+  // แถวเดิมที่เหลือ (รายการลดลง) ลบจากล่างขึ้นบน — อยู่เหนือแถวที่เพิ่งต่อท้ายเสมอ เลขแถวจึงไม่เลื่อน
+  const runs = toRuns_(oldRows.slice(items.length));
+  for (let j = runs.length - 1; j >= 0; j--) sh.deleteRows(runs[j][0], runs[j][1]);
 }
 
 function deleteDay_(date) {
@@ -287,18 +330,7 @@ function deleteDay_(date) {
 /** ลบแถวใน Items ของวันที่ระบุ โดยลบเป็นก้อนต่อเนื่องจากล่างขึ้นบน */
 function deleteItemsOf_(date) {
   const sh = sheet_(SHEET.ITEMS);
-  const last = sh.getLastRow();
-  if (last < 2) return;
-  const col = sh.getRange(2, 1, last - 1, 1).getValues();
-
-  const runs = []; // [startRow, count]
-  for (let i = 0; i < col.length; i++) {
-    if (toDateStr_(col[i][0]) !== date) continue;
-    const row = i + 2;
-    const lastRun = runs[runs.length - 1];
-    if (lastRun && lastRun[0] + lastRun[1] === row) lastRun[1]++;
-    else runs.push([row, 1]);
-  }
+  const runs = toRuns_(matchingRows_(sh, date, sh.getLastRow()));
   for (let j = runs.length - 1; j >= 0; j--) sh.deleteRows(runs[j][0], runs[j][1]);
 }
 
@@ -353,8 +385,8 @@ function savePresets_(presets) {
 /* Helpers                                                            */
 /* ------------------------------------------------------------------ */
 
-function sheet_(name) {
-  const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(name);
+function sheet_(name, ss) {
+  const sh = (ss || SpreadsheetApp.getActiveSpreadsheet()).getSheetByName(name);
   if (!sh) throw new Error('ไม่พบชีต "' + name + '" กรุณารันฟังก์ชัน setup ก่อน');
   return sh;
 }
@@ -367,8 +399,8 @@ function readRows_(sh) {
 }
 
 /** หาแถว (1-based) ที่คอลัมน์ A ตรงกับวันที่ คืน -1 ถ้าไม่พบ */
-function findRowIndex_(sh, date) {
-  const last = sh.getLastRow();
+function findRowIndex_(sh, date, last) {
+  if (last === undefined) last = sh.getLastRow();
   if (last < 2) return -1;
   const col = sh.getRange(2, 1, last - 1, 1).getValues();
   for (let i = 0; i < col.length; i++) {
